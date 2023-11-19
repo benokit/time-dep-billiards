@@ -25,9 +25,9 @@
 // Find next root of a function f(t) on the interval (ta, tb) in which
 // the first drerivative is negative: df/dt < 0.
 // Type F mus support operator () (double t, double& f, double& df)
-// where t is the independnet variable, f is a value of the function at t
+// where t is the independent variable, f is a value of the function at t
 // and df is its derivative at t.
-// If find_next_root returns true than f(root) = 0 and df(root) < 0.
+// If find_next_root returns true then f(root) = 0 and df(root) < 0.
 template <typename F>
 inline bool find_next_root (F fdf, double ta, double tb, double& root)
 {   
