@@ -23,6 +23,7 @@
 #include <cmath>
 #include <iomanip>
 #include <tuple>
+#include <iostream>
 #include "froot.h"
 
 struct Particle {

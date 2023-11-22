@@ -21,12 +21,11 @@
 #define __SINAI_H
 
 #include <cmath>
-#include <random>
-#include <utility>
+#include "../billiard.h"
 
 /* x0 = sqrt(2+sqrt(3)) */
-/* povrsina S = sqrt(2)*x0 - 2*pi/3*/
-/* tezisce xt = yt = (sqrt(98+39*sqrt(3))-2*x0*pi) / (3*S) */
+/* area: S = sqrt(2)*x0 - 2*pi/3*/
+/* center of mass: xt = yt = (sqrt(98+39*sqrt(3))-2*x0*pi) / (3*S) */
 /* < r^2 > = (6*(8+7*sqrt(3))-8*(3+sqrt(3))*pi) / (3*S) */
 
 namespace Sinai

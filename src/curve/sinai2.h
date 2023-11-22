@@ -21,8 +21,7 @@
 #define __SINAI2_H
 
 #include <cmath>
-#include <random>
-#include <utility>
+#include "../billiard.h"
 
 namespace Sinai2
 {

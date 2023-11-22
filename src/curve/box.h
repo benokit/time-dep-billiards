@@ -23,6 +23,7 @@
 #include <cmath>
 #include <random>
 #include <utility>
+#include "../billiard.h"
 
 namespace Box
 {

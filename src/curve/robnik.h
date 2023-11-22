@@ -20,8 +20,7 @@
 #ifndef __ROBNIK_H
 #define __ROBNIK_H
 
-#include <cmath>
-#include <random>
+#include "../billiard.h"
 
 class Robnik : public Curve<Robnik> {
     public:
