@@ -1,4 +1,4 @@
-# Library for numerical simulations of billiard systems
+# Library for numerical simulations of billiard dynamical systems
 
 - Written in C++
 - Highly efficient
@@ -64,7 +64,7 @@ Here is an equivalent of the above example but with a static billiard domain def
 ```c++
 #include "billiard.h"
 
-struct FlattenedCurve : public Domain<FlattenedCurve> {
+struct FlattenedCircle : public Domain<FlattenedCircle> {
     inline Derivatives derivatives (const Particle& p) const {
             Derivatives d;
             double x2 = p.x * p.x; 
@@ -77,9 +77,56 @@ struct FlattenedCurve : public Domain<FlattenedCurve> {
 };
 
 int main() {
-    Billiard<FreeFlight,GenericTimeStep,Static,FlattenedCurve> billiard;
+    // Billiard domain is specified with the fourth template parameter
+    Billiard<FreeFlight,GenericTimeStep,Static,FlattenedCircle> billiard;
 
     Particle particle = (Particle) {0.0, 0.0, 1.0, 1.0, 0};
+
+    for (int i = 0; i < 10; i++) {
+        billiard.collision(particle);
+        particle.print();
+    }
+}
+```
+
+## Define complex billiard domains with composition
+
+A billiard domain can be defined as a an intersection of positive domains of arbitrarily many functions `f1(x, y, t), f2(x, y, t), ...`.
+
+For example, we can cut the billiard domain in the above example with a half plane:
+
+```c++
+#include "billiard.h"
+
+struct FlattenedCircle : public Domain<FlattenedCircle> {
+    inline Derivatives derivatives (const Particle& p) const {
+            Derivatives d;
+            double x2 = p.x * p.x; 
+            d.f = 1.0 - x2 * x2 - p.y * p.y;
+            d.dfdx = 4.0 * x2 * p.x;
+            d.dfdy = 2.0 * p.y;
+            d.dfdt = 0.0; 
+            return d;
+        }
+};
+
+struct MyHalfPlane : public Domain<MyHalfPlane> {
+    inline Derivatives derivatives (const Particle& p) const {
+            Derivatives d;
+            d.f = p.x + p.y + 0.1;
+            d.dfdx = 1.0;
+            d.dfdy = 1.0;
+            d.dfdt = 0.0; 
+            return d;
+        }
+};
+
+
+int main() {
+    // domains are simply added to billiard's template parameters from position four onward
+    Billiard<FreeFlight,GenericTimeStep,Static,FlattenedCircle,MyHalfPlane> billiard;
+
+    Particle particle = (Particle) {0.0, 0.0, -1.0, -1.0, 0};
 
     for (int i = 0; i < 10; i++) {
         billiard.collision(particle);
