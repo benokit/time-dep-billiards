@@ -1,29 +1,10 @@
-/*
-  Copyright (C) 2014 Benjamin Batistic
-
-  This file is part of Billiards Numerical Library.
-
-  Billiards Numerical Library is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Billiards Numerical Library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Billiards Numerical Library.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #ifndef __FROOT_H
 #define __FROOT_H
 
 #include <cmath>
 
 // Find next root of a function f(t) on the interval (ta, tb) in which
-// the first drerivative is negative: df/dt < 0.
+// the first derivative is negative: df/dt < 0.
 // Type F mus support operator () (double t, double& f, double& df)
 // where t is the independent variable, f is a value of the function at t
 // and df is its derivative at t.

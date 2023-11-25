@@ -2,30 +2,36 @@
 
 - Written in C++
 - Highly efficient
+- Suitable for massive numerical computations
 - Generic
 - Easy to use
 
 ## Minimal example
 
+In this example it is shown how to compute 10 consecutive collisions of a particle in a static elliptical billiard whose domain is an ellipse with `a = 1` and `b = 2`. Between the collisions the particle is moving freely - with constant velocity.
+
 Create a file `test.cpp`. Copy the library `src` folder in the same location as the file. Put the following content in the file:
 
-```C++
+```c++
 #include "billiard.h"
-#include "curve/ellipse.h"
+#include "domains/ellipse.h"
 
-struct EllipseCurve : public Ellipse {
-        EllipseCurve () : Ellipse (2.0) {}
+struct EllipseDomain : public Ellipse {
+        EllipseDomain () : Ellipse (2.0) {}
 };
 
 int main() {
-    // define a billiard dynamical system with a static domain
-    // bounded with an ellipse inside which a particle moves freely
-    Billiard<FreeFlight,GenericTimeStep,Static,EllipseCurve> billiard;
+    // Billiard is defined with a set of template parameters
+    Billiard<FreeFlight,GenericTimeStep,Static,EllipseDomain> billiard;
 
+    // state of a particle is represented with a vector (x, y, vx, vy, t)
     Particle particle = (Particle) {0.0, 0.0, 1.0, 1.0, 0};
 
     for (int i = 0; i < 10; i++) {
+        // billiard.collision() moves the particle state immediately after the next collision
         billiard.collision(particle);
+
+        // print the particle state: x y vx vy t
         particle.print();
     }
 }
@@ -45,4 +51,39 @@ Running `./test` prints states of the particle after 10 consecutive collisions:
        0.3830800733073194      -0.6531652384484568        0.234454388266455        1.394643732220743        7.658102435985668
        0.5889526751409472       0.5714607363784157      -0.9996808917424155       -1.000319006459983        8.536194773501039
       -0.5651339088957582      -0.5833625223718957       0.1651731605513426        1.404534736855405        9.690649753654922
+```
+
+## Define billiard domain
+
+A billiard domain is defined as a domain of a continuous function `f(x, y, t)` where `f > 0`. A boundary of a billiard is a curve `f = 0`.
+
+A boundary is defined as a type derived from a generic `Domain` type and implements derivatives function which provides a value of `f` and its first derivatives at any given point of space and time.
+
+Here is an equivalent of the above example but with a static billiard domain defined with `f = 1 - x^4 - y^2`:
+
+```c++
+#include "billiard.h"
+
+struct FlattenedCurve : public Domain<FlattenedCurve> {
+    inline Derivatives derivatives (const Particle& p) const {
+            Derivatives d;
+            double x2 = p.x * p.x; 
+            d.f = 1.0 - x2 * x2 - p.y * p.y; // f = 1 - x^4 - y^3
+            d.dfdx = 4.0 * x2 * p.x;
+            d.dfdy = 2.0 * p.y;
+            d.dfdt = 0.0; 
+            return d;
+        }
+};
+
+int main() {
+    Billiard<FreeFlight,GenericTimeStep,Static,FlattenedCurve> billiard;
+
+    Particle particle = (Particle) {0.0, 0.0, 1.0, 1.0, 0};
+
+    for (int i = 0; i < 10; i++) {
+        billiard.collision(particle);
+        particle.print();
+    }
+}
 ```

@@ -69,7 +69,7 @@ inline Particle Transform<T>::inverse (const Particle& p) const
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename C>
-class TransformCurve : public Curve<TransformCurve<T,C>> {
+class TransformCurve : public Domain<TransformCurve<T,C>> {
     public:
         inline Derivatives derivatives (const Particle&) const;
     private:

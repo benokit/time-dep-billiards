@@ -1,22 +1,3 @@
-/*
-  Copyright (C) 2014 Benjamin Batistic
-
-  This file is part of Billiards Numerical Library.
-
-  Billiards Numerical Library is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Billiards Numerical Library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Billiards Numerical Library.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #ifndef __SINAI_H
 #define __SINAI_H
 
@@ -30,7 +11,7 @@
 
 namespace Sinai
 {
-    struct Circle : public Curve<Circle> {
+    struct Circle : public Domain<Circle> {
         inline Derivatives derivatives (const Particle& p) const {
             static double x0 = sqrt (2.0 + sqrt (3.0));
             double x = p.x - x0;
@@ -44,7 +25,7 @@ namespace Sinai
         }
     };
 
-    struct Xaxis : public Curve<Xaxis> {
+    struct Xaxis : public Domain<Xaxis> {
         inline Derivatives derivatives (const Particle& p) const {
             Derivatives d;
             d.f = p.y;
@@ -55,7 +36,7 @@ namespace Sinai
         }
     };
 
-    struct Yaxis : public Curve<Yaxis> {
+    struct Yaxis : public Domain<Yaxis> {
         inline Derivatives derivatives (const Particle& p) const {
             Derivatives d;
             d.f = p.x;

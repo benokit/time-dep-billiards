@@ -1,22 +1,3 @@
-/*
-  Copyright (C) 2014 Benjamin Batistic
-
-  This file is part of Billiards Numerical Library.
-
-  Billiards Numerical Library is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Billiards Numerical Library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Billiards Numerical Library.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #ifndef __BILLIARD_H
 #define __BILLIARD_H
 
@@ -79,14 +60,14 @@ struct Derivatives {
 };
 
 template <typename C>
-struct Curve {
+struct Domain {
     inline void fdf (const Particle&, double&, double&) const;
     inline void reflection (Particle&) const;
     inline double tangent_velocity (const Particle&) const;
 };
 
 template <typename C>
-inline void Curve<C>::fdf (const Particle& p, double& f, double& df) const
+inline void Domain<C>::fdf (const Particle& p, double& f, double& df) const
 {
     Derivatives d = static_cast<const C*>(this) -> derivatives (p);
     f  = d.f;
@@ -94,7 +75,7 @@ inline void Curve<C>::fdf (const Particle& p, double& f, double& df) const
 }
 
 template <typename C>
-inline void Curve<C>::reflection (Particle& p) const
+inline void Domain<C>::reflection (Particle& p) const
 {
     Derivatives d = static_cast<const C*>(this) -> derivatives (p);
     double kick = 2.0 * (d.dfdx * p.vx + d.dfdy * p.vy + d.dfdt) 
@@ -104,7 +85,7 @@ inline void Curve<C>::reflection (Particle& p) const
 }
 
 template <typename C>
-inline double Curve<C>::tangent_velocity (const Particle& p) const
+inline double Domain<C>::tangent_velocity (const Particle& p) const
 {
     Derivatives d = static_cast<const C*>(this) -> derivatives (p);
     return (d.dfdx * p.vy - d.dfdy * p.vx) 
@@ -141,7 +122,7 @@ class Billiard {
         F fly;
     private:
         Z time_step;
-        std::tuple<Cs...> curves;
+        std::tuple<Cs...> domains;
 
         template<int ...>  struct seq {};
         template<int N, int ...S> struct genseq : genseq<N-1, N-1, S...> {};
@@ -160,7 +141,7 @@ template <int ...S>
 inline bool Billiard<F,Z,T,Cs...>::base_is_inside (const Particle& p, seq<S...>) const
 {
     bool isInside = true;
-    is_inside_aux (p, isInside, std::get<S>(curves) ...);
+    is_inside_aux (p, isInside, std::get<S>(domains) ...);
     return isInside;
 }
 
@@ -179,7 +160,7 @@ inline void Billiard<F,Z,T,Cs...>::base_collision (Particle& p, seq<S...>) const
     while (!isCollision) {
         ta = tb;
         tb = tb + step;
-        is_collision_aux (p0, ta, tb, p, isCollision, fly, std::get<S>(curves) ...);
+        is_collision_aux (p0, ta, tb, p, isCollision, fly, std::get<S>(domains) ...);
     }
 }
 
@@ -189,30 +170,30 @@ static inline void is_collision_aux (Particle p, double ta, double tb, Particle&
 
 template<typename F, typename C, typename... Cs>
 static inline void is_collision_aux (Particle p, double ta, double tb, Particle& p1, bool& isCollision, 
-                              const F& fly, const C& curve, const Cs&... curves) 
+                              const F& fly, const C& domain, const Cs&... domains) 
 {
     double tm;
-    auto f = [&fly, &curve, &p] (double t, double& f, double& df) {curve.fdf (fly (p, t), f, df);};
+    auto f = [&fly, &domain, &p] (double t, double& f, double& df) {domain.fdf (fly (p, t), f, df);};
     if (find_next_root (f, ta, tb, tm)) {
         p1 = fly (p, tm);
-        curve.reflection (p1);
+        domain.reflection (p1);
         isCollision = true;
-        is_collision_aux (p, ta, tm, p1, isCollision, fly, curves...);
+        is_collision_aux (p, ta, tm, p1, isCollision, fly, domains...);
     }
     else {
-        is_collision_aux (p, ta, tb, p1, isCollision, fly, curves...);
+        is_collision_aux (p, ta, tb, p1, isCollision, fly, domains...);
     }
 }
 
 static inline void is_inside_aux (const Particle& p, bool& isInside) {}
 
 template<typename C, typename... Cs>
-static inline void is_inside_aux (const Particle& p, bool& isInside, const C& curve, const Cs&... curves) 
+static inline void is_inside_aux (const Particle& p, bool& isInside, const C& domain, const Cs&... domains) 
 {
     double f, df;
-    curve.fdf (p, f, df);
+    domain.fdf (p, f, df);
     isInside = isInside && f > 0;
-    is_inside_aux (p, isInside, curves...);
+    is_inside_aux (p, isInside, domains...);
 }
 
 #endif
