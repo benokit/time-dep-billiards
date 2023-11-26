@@ -9,14 +9,14 @@
 template <typename B, typename F>
 class CollisionsPropagator {
     public:
-        inline void propagate(Particle&, unsigned);
+        inline void propagate(Particle&, unsigned) const;
     private:
         F time_fold;
         B billiard;
 };
 
 template <typename B, typename F>
-void CollisionsPropagator<B,F>::propagate (Particle& particle, unsigned n_collisions)
+void CollisionsPropagator<B,F>::propagate (Particle& particle, unsigned n_collisions) const
 {
     while (n_collisions > 0) {
         billiard.collision (particle);
@@ -28,7 +28,7 @@ void CollisionsPropagator<B,F>::propagate (Particle& particle, unsigned n_collis
 template <typename B, typename F>
 class TimePropagator {
     public:
-        inline void propagate(Particle&, const double);
+        inline void propagate(Particle&, const double) const;
     private:
         F time_fold;
         B billiard;
@@ -36,7 +36,7 @@ class TimePropagator {
 
 
 template <typename B, typename F>
-void TimePropagator<B,F>::propagate (Particle& particle, const double t_step)
+void TimePropagator<B,F>::propagate (Particle& particle, const double t_step) const
 {
     if (t_step <= 0.0) return;
 
@@ -57,14 +57,14 @@ void TimePropagator<B,F>::propagate (Particle& particle, const double t_step)
 template <typename B, typename F>
 class TimeTracePropagator {
     public:
-        inline std::vector<Particle> propagate (Particle&, const double);
+        inline std::vector<Particle> propagate (Particle&, const double) const;
     private:
         F time_fold;
         B billiard;
 };
 
 template <typename B, typename F>
-std::vector<Particle> TimeTracePropagator<B,F>::propagate (Particle& particle, const double t_step)
+std::vector<Particle> TimeTracePropagator<B,F>::propagate (Particle& particle, const double t_step) const
 {
     std::vector<Particle> particle_trace;
     if (t_step <= 0.0) return particle_trace;
@@ -97,7 +97,7 @@ class Observer {
     public:
         using T = typename return_type_of<Q, Particle>::type;
         template <typename S>
-        inline std::vector<T> sample_observable (Particle& particle, S& steps) {
+        inline std::vector<T> sample_observable (Particle& particle, const S& steps) const {
             std::vector<T> observed_values(steps.n_steps);
             for (int i = 0; i < steps.n_steps; ++i) {
                 propagator.propagate(particle, steps.step(i));
@@ -122,6 +122,20 @@ struct TimeFoldNone {
 
 struct TimeFoldToZero {
     inline void operator () (Particle& p) const {p.set_time (0);}
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct ObserveEnergy {
+    inline double operator () (const Particle& p) const { return p.vx * p.vx + p.vy * p.vy; }
+};
+
+struct ObserveVelocity {
+    inline double operator () (const Particle& p) const { return sqrt (p.vx * p.vx + p.vy * p.vy); }
+};
+
+struct ObserveParticle {
+    inline Particle operator () (const Particle& p) const { return p; }
 };
 
 #endif
