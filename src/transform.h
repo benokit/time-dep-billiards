@@ -1,24 +1,7 @@
-/*
-  Copyright (C) 2014 Benjamin Batistic
-
-  This file is part of Billiards Numerical Library.
-
-  Billiards Numerical Library is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Billiards Numerical Library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Billiards Numerical Library.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #ifndef __TRANSFORM_H
 #define __TRANSFORM_H
+
+#include "billiard.h"
 
 struct Jacobian {
     double xp;
@@ -69,20 +52,20 @@ inline Particle Transform<T>::inverse (const Particle& p) const
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename C>
-class TransformCurve : public Domain<TransformCurve<T,C>> {
+class TransformDomain : public Domain<TransformDomain<T,C>> {
     public:
         inline Derivatives derivatives (const Particle&) const;
     private:
-         C curve;
+         C domain;
          T transform;
 };
 
 template <typename T, typename C>
-inline Derivatives TransformCurve<T,C>::derivatives (const Particle& p) const
+inline Derivatives TransformDomain<T,C>::derivatives (const Particle& p) const
 {
     Particle pt = transform (p);
     Jacobian j  = transform.jacobian (p);
-    Derivatives da = curve.derivatives (pt);
+    Derivatives da = domain.derivatives (pt);
     Derivatives db;
     db.f = da.f;
     db.dfdx = da.dfdx * j.dxpdx + da.dfdy * j.dypdx;

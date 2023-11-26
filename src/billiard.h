@@ -38,78 +38,35 @@ struct FreeFlight {
     }
 };
 
-struct Periodic {
-    inline void operator () (Particle& p) const {p.time_modulo (2 * M_PI);}
-};
-
-struct Aperiodic {
-    inline void operator () (const Particle& p) const {}
-};
-
-struct Static {
-    inline void operator () (Particle& p) const {p.set_time (0);}
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 
-struct Derivatives {
-    double f;
-    double dfdx;
-    double dfdy;
-    double dfdt;
-};
-
-template <typename C>
-struct Domain {
-    inline void fdf (const Particle&, double&, double&) const;
-    inline void reflection (Particle&) const;
-    inline double tangent_velocity (const Particle&) const;
-};
-
-template <typename C>
-inline void Domain<C>::fdf (const Particle& p, double& f, double& df) const
-{
-    Derivatives d = static_cast<const C*>(this) -> derivatives (p);
-    f  = d.f;
-    df = d.dfdx * p.vx + d.dfdy * p.vy + d.dfdt;
-}
-
-template <typename C>
-inline void Domain<C>::reflection (Particle& p) const
-{
-    Derivatives d = static_cast<const C*>(this) -> derivatives (p);
-    double kick = 2.0 * (d.dfdx * p.vx + d.dfdy * p.vy + d.dfdt) 
-                      / (d.dfdx * d.dfdx + d.dfdy * d.dfdy);
-    p.vx -= kick * d.dfdx;
-    p.vy -= kick * d.dfdy;
-}
-
-template <typename C>
-inline double Domain<C>::tangent_velocity (const Particle& p) const
-{
-    Derivatives d = static_cast<const C*>(this) -> derivatives (p);
-    return (d.dfdx * p.vy - d.dfdy * p.vx) 
-           / sqrt (d.dfdx * d.dfdx + d.dfdy * d.dfdy);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-struct GenericTimeStep {
-    GenericTimeStep () : geometricScale(0.1), timeScale(0.1), vmin(0.01) {}
-    GenericTimeStep (double s, double t, double v) : 
-        geometricScale(s), timeScale(t), vmin(v) {}
+struct ConstantTimeScale {
+    ConstantTimeScale () : time_scale(1.0) {}
+    ConstantTimeScale (double t) : time_scale(t) {}
     inline double operator () (const Particle& p) const {
-        double v = p.velocity();
-        if (v > vmin) return v < (geometricScale / timeScale) ? timeScale : (geometricScale / v);
-        else return (geometricScale / v);
+        return time_scale;
     }
     private:
-    const double geometricScale, timeScale, vmin;
+    const double time_scale;
+};
+
+struct AdaptiveTimeScale {
+    AdaptiveTimeScale () : geometric_scale(0.1), time_scale(0.1), too_slow_velocity(0.01) {}
+    AdaptiveTimeScale (double s, double t) : AdaptiveTimeScale(s, t, 0.0) {}
+    AdaptiveTimeScale (double s, double t, double v) : 
+        geometric_scale(s), time_scale(t), too_slow_velocity(v) {}
+    inline double operator () (const Particle& p) const {
+        double v = p.velocity();
+        if (v > too_slow_velocity) return v < (geometric_scale / time_scale) ? time_scale : (geometric_scale / v);
+        else return (geometric_scale / v);
+    }
+    private:
+    const double geometric_scale, time_scale, too_slow_velocity;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename F, typename Z, typename T, typename ...Cs>
+template <typename F, typename Z, typename ...Cs>
 class Billiard {
     public:
         inline void collision (Particle& p) const {
@@ -118,7 +75,6 @@ class Billiard {
         inline bool is_inside (const Particle& p) const {
             return base_is_inside (p, typename genseq<sizeof...(Cs)>::type());
         }
-        T time_fold;
         F fly;
     private:
         Z time_step;
@@ -136,9 +92,9 @@ class Billiard {
 
 };
 
-template <typename F, typename Z, typename T, typename ...Cs> 
+template <typename F, typename Z, typename ...Cs> 
 template <int ...S>
-inline bool Billiard<F,Z,T,Cs...>::base_is_inside (const Particle& p, seq<S...>) const
+inline bool Billiard<F,Z,Cs...>::base_is_inside (const Particle& p, seq<S...>) const
 {
     bool isInside = true;
     is_inside_aux (p, isInside, std::get<S>(domains) ...);
@@ -146,9 +102,9 @@ inline bool Billiard<F,Z,T,Cs...>::base_is_inside (const Particle& p, seq<S...>)
 }
 
 
-template <typename F, typename Z, typename T, typename ...Cs>
+template <typename F, typename Z, typename ...Cs>
 template <int ...S>
-inline void Billiard<F,Z,T,Cs...>::base_collision (Particle& p, seq<S...>) const
+inline void Billiard<F,Z,Cs...>::base_collision (Particle& p, seq<S...>) const
 {
     double step = time_step (p);
     double ta, tb{0.0};

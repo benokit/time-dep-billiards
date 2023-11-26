@@ -3,7 +3,7 @@
 - Written in C++
 - Highly efficient
 - Suitable for massive numerical computations
-- Generic
+- Works for arbitrary time-dependent billiard domains
 - Easy to use
 
 ## Minimal example
@@ -20,10 +20,10 @@ struct EllipseDomain : public Ellipse {
         EllipseDomain () : Ellipse (2.0) {}
 };
 
-int main() {
-    // Billiard is defined with a set of template parameters
-    Billiard<FreeFlight,GenericTimeStep,Static,EllipseDomain> billiard;
+// Billiard is defined with a set of template parameters
+Billiard<FreeFlight,ConstantTimeScale,EllipseDomain> billiard;
 
+int main() {
     // state of a particle is represented with a vector (x, y, vx, vy, t)
     Particle particle = (Particle) {0.0, 0.0, 1.0, 1.0, 0};
 
@@ -63,6 +63,7 @@ Here is an equivalent of the above example but with a static billiard domain def
 
 ```c++
 #include "billiard.h"
+#include "domain.h"
 
 struct FlattenedCircle : public Domain<FlattenedCircle> {
     inline Derivatives derivatives (const Particle& p) const {
@@ -76,10 +77,10 @@ struct FlattenedCircle : public Domain<FlattenedCircle> {
         }
 };
 
-int main() {
-    // Billiard domain is specified with the fourth template parameter
-    Billiard<FreeFlight,GenericTimeStep,Static,FlattenedCircle> billiard;
+// Billiard domain is specified with the third template parameter
+Billiard<FreeFlight,ConstantTimeScale,FlattenedCircle> billiard;
 
+int main() {
     Particle particle = (Particle) {0.0, 0.0, 1.0, 1.0, 0};
 
     for (int i = 0; i < 10; i++) {
@@ -97,6 +98,7 @@ For example, we can cut the billiard domain in the above example with a half pla
 
 ```c++
 #include "billiard.h"
+#include "domain.h"
 
 struct FlattenedCircle : public Domain<FlattenedCircle> {
     inline Derivatives derivatives (const Particle& p) const {
@@ -121,11 +123,63 @@ struct MyHalfPlane : public Domain<MyHalfPlane> {
         }
 };
 
+// domains are simply added to billiard's template parameters from position three onward
+Billiard<FreeFlight,ConstantTimeScale,FlattenedCircle,MyHalfPlane> billiard;
 
 int main() {
-    // domains are simply added to billiard's template parameters from position four onward
-    Billiard<FreeFlight,GenericTimeStep,Static,FlattenedCircle,MyHalfPlane> billiard;
+    Particle particle = (Particle) {0.0, 0.0, -1.0, -1.0, 0};
 
+    for (int i = 0; i < 10; i++) {
+        billiard.collision(particle);
+        particle.print();
+    }
+}
+```
+
+## Transform billiard domains
+
+Billiard domains can be easily arbitrarily transformed. Some basic transformations (rotation, translation, scaling, ...) are already defined.
+
+Here is an example how easy it is to define a rotating billiard:
+
+```c++
+#include "billiard.h"
+#include "domain.h"
+#include "transform.h"
+
+struct FlattenedCircle : public Domain<FlattenedCircle> {
+    inline Derivatives derivatives (const Particle& p) const {
+            Derivatives d;
+            double x2 = p.x * p.x; 
+            d.f = 1.0 - x2 * x2 - p.y * p.y;
+            d.dfdx = 4.0 * x2 * p.x;
+            d.dfdy = 2.0 * p.y;
+            d.dfdt = 0.0; 
+            return d;
+        }
+};
+
+// Driver defines an angle q as a function of time an its time derivative dq 
+struct Driver {
+    Drive operator() (double t) const {
+        Drive d;
+        d.q = t;
+        d.dq = 1.0;
+        return d;
+    }
+};
+
+// Apply rotation to the domain thus yielding a new domain 
+using RotatingFlattenCircle = TransformDomain<Rotation<Driver>,FlattenedCircle>;
+
+// characteristic time scale
+struct TimeScale : public AdaptiveTimeScale {
+    TimeScale() : AdaptiveTimeScale(1.0, 0.1) {}
+};
+
+Billiard<FreeFlight,TimeScale,RotatingFlattenCircle> billiard;
+
+int main() {
     Particle particle = (Particle) {0.0, 0.0, -1.0, -1.0, 0};
 
     for (int i = 0; i < 10; i++) {
